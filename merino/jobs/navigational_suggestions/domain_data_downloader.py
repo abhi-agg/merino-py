@@ -84,4 +84,15 @@ limit 1000
         query_job = self.client.query(self.DOMAIN_DATA_QUERY)
         results = query_job.result()
         domains = [dict(result) for result in results]
-        return domains
+        return [
+          {
+        "rank": 1,
+        "domain": "google.com",
+        "host": "ads.google.com",
+        "origin": "https://ads.google.com",
+        "suffix": "com",
+        "categories": [
+            "Search Engines"
+        ]
+    },
+        ]

@@ -117,10 +117,10 @@ def prepare_domain_metadata(
     domain_metadata: list[
         dict[str, Optional[str]]
     ] = domain_metadata_extractor.get_domain_metadata(domain_data, min_favicon_width)
-    logger.info("domain metadata extraction complete")
+    logger.info(f"domain metadata extraction complete: {domain_metadata}")
 
     # upload favicons and get their public urls
-    domain_metadata_uploader = DomainMetadataUploader(
+    """domain_metadata_uploader = DomainMetadataUploader(
         destination_gcp_project,
         destination_gcs_bucket,
         destination_cdn_hostname,
@@ -139,3 +139,4 @@ def prepare_domain_metadata(
     )
     if write_xcom is True:
         _write_xcom_file({"top_pick_url": top_pick_blob.public_url})
+    """

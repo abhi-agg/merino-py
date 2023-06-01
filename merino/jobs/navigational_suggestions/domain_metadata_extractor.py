@@ -72,6 +72,25 @@ class Scraper:
             metas=[meta.attrs for meta in self.browser.select(self.META_SELECTOR)],
         )
 
+    def scrape_favicons_from_api(self, domain) -> Optional[dict[str,Any]]:
+        """Scrape the favicon data for an already opened URL.
+
+        Returns:
+            FaviconData: Favicon data for a URL
+        """
+        url = f"https://favicongrabber.com/api/grab/{domain}"
+        try:
+            response = requests.get(
+                url,
+                headers={"User-agent": FIREFOX_UA},
+                timeout=TIMEOUT,
+            )
+            logger.info(f"Response code: {response.status_code}, response:{response}, url:{url}")
+            return response.json if response.status_code == 200 else None
+        except Exception as e:
+            logger.info(f"Exception: {e} while getting favicons from API for url {url}")
+            return None
+
     def get_default_favicon(self, url: str) -> Optional[str]:
         """Return the default favicon for the given url.
 
@@ -159,7 +178,7 @@ class DomainMetadataExtractor:
             width, height = img.size
             return int(min(width, height))
 
-    def _extract_favicons(self, scraped_url: str) -> list[dict[str, Any]]:
+    def _extract_favicons(self, domain: str, scraped_url: str) -> list[dict[str, Any]]:
         """Extract all favicons for an already opened url"""
         logger.info(f"Extracting all favicons for {scraped_url}")
         favicons: list[dict[str, Any]] = []
@@ -192,6 +211,9 @@ class DomainMetadataExtractor:
             default_favicon_url = self.scraper.get_default_favicon(scraped_url)
             if default_favicon_url is not None:
                 favicons.append({"href": default_favicon_url})
+
+            favicons_from_api = self.scraper.scrape_favicons_from_api(domain)
+            logger.info(f"FAVICONS FROM API:{favicons_from_api}")
 
         except Exception as e:
             logger.info(f"Exception {e} while extracting favicons for {scraped_url}")
@@ -244,12 +266,12 @@ class DomainMetadataExtractor:
 
         return best_favicon_url if best_favicon_width >= min_width else ""
 
-    def _get_favicon(self, scraped_url: str, min_width: int) -> str:
+    def _get_favicon(self, domain: str, scraped_url: str, min_width: int) -> str:
         """Extract all favicons for an already opened URL and return the one that satisfies the
         minimum width criteria. If multiple favicons satisfy the criteria then return the one
         with the highest resolution.
         """
-        favicons: list[dict[str, Any]] = self._extract_favicons(scraped_url)
+        favicons: list[dict[str, Any]] = self._extract_favicons(domain, scraped_url)
         logger.info(
             f"{len(favicons)} favicons extracted for {scraped_url}. Favicons are: {favicons}"
         )
@@ -307,7 +329,7 @@ class DomainMetadataExtractor:
 
                 if full_url and domain in full_url:
                     scraped_base_url = self._get_base_url(full_url)
-                    favicon = self._get_favicon(scraped_base_url, favicon_min_width)
+                    favicon = self._get_favicon(domain, scraped_base_url, favicon_min_width)
                     second_level_domain = self._get_second_level_domain(domain, suffix)
                     title = self._get_title(second_level_domain)
 
